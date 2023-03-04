@@ -1,6 +1,7 @@
 import * as path from "path";
 
 import csv from 'csv-parse';
+import { endOfDay } from "date-fns";
 import fs from 'fs';
 
 export function ProcessCsv(fPath: string, endDate?: Date){
@@ -11,16 +12,16 @@ export function ProcessCsv(fPath: string, endDate?: Date){
         .on('error', error => {
             reject(error);
         })
-        .pipe(csv())
+        .pipe(csv({from_line: 2}))
         .on('data', (data) => {
             let [date, transactionType, token, amount] = data;
-            if(token !== "token") {
-              const currentDate = new Date(Number(date))
-              if(endDate && endDate >= currentDate){
-                populateMap(token, Number(amount), map, transactionType)
-              }else if(!endDate){
-                populateMap(token, Number(amount), map, transactionType)
-              }
+            const actualAmount = Number(amount)
+            const currentDate = Number(date)
+            const comparedDate = endOfDay(new Date(endDate)).getTime();
+            if(endDate && comparedDate >= currentDate){
+              populateMap(token, actualAmount, map, transactionType)
+            }else if(!endDate){
+              populateMap(token, actualAmount, map, transactionType)
             }
         })
         .on('end', () => {
